@@ -1,6 +1,8 @@
 # LexiQuest AI
 
-**LexiQuest AI** is an open-source WordPress plugin suite that empowers educators and students with an AI-enhanced reading ecosystem. **Note:** All features and documentation are tracked in the root `FEATURES.md` and `plan.md`. Per-plugin documentation files are not maintained. It is inspired by Scholastic Literacy Pro but designed with flexibility, modularity, and dynamic AI content generation in mind.
+LexiQuest AI is a modular WordPress plugin suite designed to help children grow as readers through personalized, AI-generated stories and quizzes. It leverages OpenAI for dynamic content creation and public image APIs for visual storytelling. LexiQuest AI maintains familiar education-centric terminology like "Lexile Level," "Reading Progress," and "Student Quizzes" to deliver an engaging, scalable, and modern reading experience.
+
+**Note:** All features and documentation are tracked in the root `FEATURES.md` and `plan.md`. Per-plugin documentation files are not maintained. 
 
 ---
 

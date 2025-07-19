@@ -18,7 +18,8 @@ This document provides a high-level breakdown of all features and modules in the
 - Rate-limits generation to prevent abuse
 
 ## Image Fetcher (lexiquest-image-fetcher)
-- Connects to Unsplash, Pexels, or Pixabay APIs
+- Free image APIs (Unsplash, Pexels, Pixabay) are supported, with admin-selectable source.
+  - For Unsplash, only the Access Key is required (do not use Application ID or Secret Key).
 - Fetches relevant images for stories/books
 - Admin-selectable provider and API key
 

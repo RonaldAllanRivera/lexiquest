@@ -9,6 +9,15 @@ This document describes the architecture of the LexiQuest AI suite and how each 
 - All plugins depend on `lexiquest-core` for shared data structures, roles, and settings.
 - Plugins communicate via WordPress hooks, custom REST API endpoints, and shared DB tables.
 
+## Automated Student-Driven AI Content Generation
+- Students log in and take a Lexile placement test as onboarding (and can retake every 3–6 months).
+- System stores each student’s Lexile and grade level.
+- When a student searches or requests a story, the system:
+  - Uses AI to generate a story and quiz tailored to their Lexile and grade level.
+  - Uses AI to select a relevant, free image for the story.
+- Story length, complexity, and quiz difficulty are automatically determined by Lexile/grade—no manual prompt or admin intervention needed.
+- Admins/teachers focus on dashboards, analytics, and moderation—not content generation.
+
 ## Plugin Responsibilities
 - **lexiquest-core:** Registers all CPTs, roles, global settings, and DB tables. Provides utility functions for other modules.
 - **lexiquest-ai-generator:** Handles AI-powered story and quiz generation. Saves output to CPTs and uses core settings for API keys.

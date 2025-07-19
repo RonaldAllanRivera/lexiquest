@@ -179,8 +179,7 @@ class LexiQuest_Core {
      */
     public function register_settings() {
         register_setting( 'lexiquest_settings', 'lexiquest_openai_api_key' );
-        register_setting( 'lexiquest_settings', 'lexiquest_image_api_key' );
-        register_setting( 'lexiquest_settings', 'lexiquest_image_api_provider' );
+        register_setting( 'lexiquest_settings', 'lexiquest_pixabay_api_key' );
     }
 
     /**
@@ -201,23 +200,24 @@ class LexiQuest_Core {
                         <td><input type="text" name="lexiquest_openai_api_key" value="<?php echo esc_attr( get_option('lexiquest_openai_api_key') ); ?>" size="50" /></td>
                     </tr>
                     <tr valign="top">
-                        <th scope="row">Image API Provider</th>
-                        <td>
-                            <select name="lexiquest_image_api_provider">
-                                <?php $provider = esc_attr( get_option('lexiquest_image_api_provider', 'unsplash') ); ?>
-                                <option value="unsplash" <?php selected( $provider, 'unsplash' ); ?>>Unsplash</option>
-                                <option value="pexels" <?php selected( $provider, 'pexels' ); ?>>Pexels</option>
-                                <option value="pixabay" <?php selected( $provider, 'pixabay' ); ?>>Pixabay</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr valign="top">
-                        <th scope="row">Image API Key</th>
-                        <td><input type="text" name="lexiquest_image_api_key" value="<?php echo esc_attr( get_option('lexiquest_image_api_key') ); ?>" size="50" /></td>
-                    </tr>
+    <th scope="row">Pixabay API Key</th>
+    <td>
+        <input type="text" name="lexiquest_pixabay_api_key" value="<?php echo esc_attr( get_option('lexiquest_pixabay_api_key') ); ?>" size="50" />
+        <br><small>Enter your <strong>Pixabay API key</strong> here. Your key is stored securely in the database and never exposed in code.</small>
+    </td>
+</tr>
                 </table>
                 <?php submit_button(); ?>
             </form>
+            <hr>
+            <h2>Student UI Shortcode</h2>
+            <p><strong>Shortcode:</strong> <code>[lexiquest_student_ui]</code></p>
+            <p>Place this shortcode in any page, post, or template where you want to show the LexiQuest student interface. This will load the interactive AI-powered story and quiz generator for students, using a secure, modern vanilla JS frontend.</p>
+            <ul>
+                <li>Works on any WordPress theme or builder.</li>
+                <li>Loads only when the shortcode is present.</li>
+                <li>Recommended for student dashboards or classroom pages.</li>
+            </ul>
         </div>
         <?php
     }

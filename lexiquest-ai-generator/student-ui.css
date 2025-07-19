@@ -1,0 +1,265 @@
+/* Main Container */
+#lexiquest-student-ui {
+    max-width: 800px;
+    margin: 2em auto;
+    padding: 2em;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #333;
+}
+
+/* Typography */
+#lexiquest-student-ui h2 {
+    color: #2c3e50;
+    margin-bottom: 1.5em;
+    text-align: center;
+    font-weight: 600;
+}
+
+#lexiquest-student-ui h3 {
+    color: #2c3e50;
+    margin: 1.5em 0 1em;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5em;
+}
+
+/* Forms */
+#lexiquest-student-ui form {
+    background: #f8f9fa;
+    padding: 1.5em;
+    border-radius: 8px;
+    margin-bottom: 2em;
+}
+
+#lexiquest-student-ui form label {
+    display: block;
+    margin-bottom: 0.5em;
+    font-weight: 500;
+    color: #495057;
+}
+
+#lexiquest-student-ui input[type="number"],
+#lexiquest-student-ui input[type="text"] {
+    width: 100%;
+    padding: 0.75em 1em;
+    margin-bottom: 1em;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 1em;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+#lexiquest-student-ui input[type="number"]:focus,
+#lexiquest-student-ui input[type="text"]:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Buttons */
+#lexiquest-student-ui .button, #lexiquest-student-ui button {
+    display: inline-block;
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 0.75em 1.5em;
+    border-radius: 6px;
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-decoration: none;
+    text-align: center;
+}
+
+#lexiquest-student-ui .button:hover, #lexiquest-student-ui button:hover {
+    background: #2980b9;
+}
+
+#lexiquest-student-ui .button:disabled, #lexiquest-student-ui button:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+}
+
+/* Story Content */
+.lexiquest-story {
+    margin-bottom: 2em;
+    line-height: 1.6;
+}
+
+.lexiquest-story-meta {
+    color: #7f8c8d;
+    margin-bottom: 1em;
+    font-size: 0.9em;
+}
+
+.story-image {
+    margin: 1.5em 0;
+    text-align: center;
+}
+
+.story-image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Quiz */
+.quiz-question {
+    background: #f8f9fa;
+    padding: 1.5em;
+    border-radius: 8px;
+    margin-bottom: 1em;
+}
+
+.quiz-options {
+    margin: 1em 0 0 1.5em;
+}
+
+.quiz-options label {
+    display: block;
+    margin-bottom: 0.75em;
+    cursor: pointer;
+}
+
+.quiz-options input[type="radio"] {
+    margin-right: 0.75em;
+}
+
+/* Quiz Results */
+.lexiquest-quiz-results {
+    background: #f8f9fa;
+    padding: 1.5em;
+    border-radius: 8px;
+    margin-top: 2em;
+}
+
+/* Status and Loading Messages */
+#lexiquest-student-ui #lq-status {
+    margin: 0.8em 0;
+    min-height: 1.5em;
+    font-size: 0.95em;
+    text-align: center;
+    padding: 0.8em 1em;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+#lexiquest-student-ui #lq-status.status-loading {
+    color: #0d47a1;
+    background-color: #e3f2fd;
+    border-left: 4px solid #1976d2;
+}
+
+#lexiquest-student-ui #lq-status.status-error {
+    color: #b71c1c;
+    background-color: #ffebee;
+    border-left: 4px solid #d32f2f;
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Quiz Feedback */
+.lexiquest-quiz-feedback {
+    margin-top: 1.5em;
+    padding: 1.5em;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.lexiquest-quiz-feedback:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.lexiquest-quiz-feedback h4 {
+    margin-top: 0;
+    color: #2c3e50;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5em;
+}
+
+/* Results Summary */
+.lexiquest-results-summary {
+    background: #e8f4fd;
+    padding: 1em;
+    border-radius: 6px;
+    margin: 1em 0;
+    text-align: center;
+    font-weight: 500;
+    color: #1976d2;
+}
+
+/* Error Messages */
+.lexiquest-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 1.5em;
+    border-radius: 8px;
+    margin: 1.5em 0;
+    border-left: 4px solid #dc3545;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.lexiquest-error h2 {
+    margin-top: 0;
+    color: #721c24;
+    font-size: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+.lexiquest-error p {
+    margin: 0.5em 0 1em;
+    line-height: 1.5;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Utility Classes */
+.text-success {
+    color: #2e7d32;
+}
+
+.text-error {
+    color: #c62828;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    #lexiquest-student-ui {
+        padding: 1em;
+        margin: 1em;
+    }
+    
+    .quiz-options {
+        margin-left: 0.5em;
+    }
+}
+
+#lexiquest-student-ui #lq-result {
+  margin-top: 2em;
+}
+#lexiquest-student-ui img {
+  border-radius: 8px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  margin-bottom: 1em;
+}
