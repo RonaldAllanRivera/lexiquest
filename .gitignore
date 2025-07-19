@@ -1,0 +1,21 @@
+# Ignore everything
+/*
+
+# But not these directories (lexiquest plugins)
+!lexiquest-core/
+!lexiquest-ai-generator/
+!lexiquest-image-fetcher/
+!lexiquest-quiz-system/
+!lexiquest-library-ui/
+!README.md
+!CHANGELOG.md
+!readme.txt
+!plan.md
+!license.md
+!FEATURES.md
+!PLUGIN_ARCHITECTURE.md
+!MANUAL_TEST_CHECKLIST.md
+!literacypro_ai_plan.md
+
+# Optionally, do not ignore .gitignore itself
+!.gitignore
