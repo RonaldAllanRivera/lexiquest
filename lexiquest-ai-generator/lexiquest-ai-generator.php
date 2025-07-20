@@ -8,6 +8,11 @@ Author: Ronald Allan Rivera
 
 // Silence is golden. Base plugin file.
 
+// --- LexiQuest: Register tags for attachments ---
+add_action('init', function() {
+    register_taxonomy_for_object_type('post_tag', 'attachment');
+});
+
 // === LexiQuest Student UI Shortcode and Asset Loader ===
 function lexiquest_student_ui_shortcode($atts) {
     // Enqueue assets
@@ -146,8 +151,8 @@ function lexiquest_handle_generate_content() {
             ]
         ],
             'image_url' => (function() use ($interests) {
-                $keyword = lexiquest_get_safe_kids_keyword($interests);
-                $local_url = lexiquest_fetch_and_save_pixabay_image($keyword);
+                $keyword = lexiquest_get_safe_kids_keyword($interests, $story_title ?? '');
+                $local_url = lexiquest_fetch_and_save_pixabay_image($keyword, $story_title ?? '');
                 return $local_url ? $local_url : lexiquest_get_fallback_image_url();
             })()
         ];
@@ -244,7 +249,22 @@ function lexiquest_ai_generate_content($request) {
 
     // --- 1. Build safe, age-appropriate prompt for OpenAI ---
     $theme = !empty($interests) ? implode(', ', $interests) : 'general';
-    $prompt = "You are an expert children's author and educator. Write an original, age-appropriate story for a student in grade {$grade} with a Lexile level of {$lexile}. The story should be positive, safe, and suitable for children, with no violence, scary or inappropriate content. Theme: {$theme}. Length: about 300 words. After the story, generate 5 multiple-choice comprehension questions with 4 options each, and provide the correct answer and a brief explanation for each. Format the response as JSON with keys: 'story_title', 'story_text', 'quiz_title', 'questions' (array of question, choices, answer, explanation).";
+    // Senior prompt engineering: explicit, safe, robust, with required JSON format
+// Example required output:
+// {
+//   "story_title": "...",
+//   "story_text": "...",
+//   "quiz_title": "...",
+//   "questions": [
+//     {
+//       "question": "...",
+//       "choices": ["...", "...", "...", "..."],
+//       "answer": "...",
+//       "explanation": "..."
+//     }
+//   ]
+// }
+$prompt = "You are an expert children's author and educator. Write an original, positive, age-appropriate story for a student in grade {$grade} with a Lexile level of {$lexile}. The story must be safe for children: no violence, fear, bullying, or inappropriate content. The story should be about {$theme}. Length: about 300 words. After the story, create 5 multiple-choice comprehension questions (4 options each), with the correct answer and a 1-sentence explanation. Output MUST be valid JSON with these keys: story_title, story_text, quiz_title, questions (array of question, choices, answer, explanation). If you cannot answer, output a JSON error object: {\"error\": \"reason\"}";
 
     // --- 2. Call OpenAI API (GPT-4, safe prompt) ---
     $openai_key = get_option('lexiquest_openai_api_key');
@@ -274,7 +294,10 @@ function lexiquest_ai_generate_content($request) {
             $body = json_decode(wp_remote_retrieve_body($openai_response), true);
             if (isset($body['choices'][0]['message']['content'])) {
                 $json = json_decode($body['choices'][0]['message']['content'], true);
-                if ($json && isset($json['story_title'], $json['story_text'], $json['questions'])) {
+if ($json && isset($json['error'])) {
+    error_log('LexiQuest OpenAI error: ' . $json['error']);
+    $openai_error = 'OpenAI error: ' . $json['error'];
+} elseif ($json && isset($json['story_title'], $json['story_text'], $json['questions'])) {
                     $story = [
                         'title' => $json['story_title'],
                         'text' => $json['story_text'],
@@ -284,8 +307,9 @@ function lexiquest_ai_generate_content($request) {
                         'questions' => $json['questions'],
                     ];
                 } else {
-                    $openai_error = 'OpenAI response could not be parsed as expected.';
-                }
+    error_log('LexiQuest: OpenAI response could not be parsed as expected. Raw: ' . $body['choices'][0]['message']['content']);
+    $openai_error = 'OpenAI response could not be parsed as expected.';
+}
             } else {
                 $openai_error = 'No content returned from OpenAI.';
             }
@@ -399,10 +423,21 @@ function lexiquest_ai_generate_content($request) {
 /**
  * Returns a safe-for-kids keyword from interests or a default.
  */
-function lexiquest_get_safe_kids_keyword($interests) {
+function lexiquest_get_safe_kids_keyword($interests, $story_title = '') {
     $whitelist = [
         'animals','nature','reading','books','school','sports','adventure','science','art','music','friendship','kindness','history','space','math','technology','robot','garden','tree','forest','mountain','ocean','sea','river','flower','insect','bird','dog','cat','horse','dinosaur','transportation','train','car','plane','boat','exploration','discovery','imagination','fun','learning','play','children','kids','student','story','library','teacher','classroom','puzzle','game','drawing','painting','craft','lego','block','magic','superhero','princess','castle','knight','dragon','pirate','detective','mystery','holiday','festival','celebration','family','community','help','respect','courage'
     ];
+    // If story_title is provided, try to use it as a keyword if it's safe
+    if ($story_title) {
+        $title = strtolower($story_title);
+        foreach ($whitelist as $safe) {
+            if (strpos($title, $safe) !== false) {
+                return $safe;
+            }
+        }
+        // Use the title as-is if not obviously unsafe
+        return $title;
+    }
     $interests = strtolower($interests);
     $interestArr = preg_split('/[\s,;]+/', $interests);
     foreach ($interestArr as $interest) {
@@ -432,8 +467,145 @@ function lexiquest_get_fallback_image_url() {
  * Downloads a random Pixabay image for a given keyword and saves it to the Media Library.
  * Returns the local URL or false on failure.
  */
-function lexiquest_fetch_and_save_pixabay_image($keyword) {
+/**
+ * Search the Media Library for an attachment matching the keyword/tag.
+ * Returns the URL if found, or false if not found.
+ */
+function lexiquest_find_media_library_image($keyword) {
+    $args = [
+        'post_type'      => 'attachment',
+        'post_status'    => 'inherit',
+        'posts_per_page' => 1,
+        'tax_query'      => [
+            [
+                'taxonomy' => 'post_tag',
+                'field'    => 'name',
+                'terms'    => $keyword,
+            ],
+        ],
+        'meta_query'     => [
+            'relation' => 'OR',
+            [
+                'key'     => '_lexiquest_pixabay_keyword',
+                'value'   => $keyword,
+                'compare' => 'LIKE',
+            ],
+            [
+                'key'     => '_lexiquest_pixabay_source_url',
+                'value'   => '', // fallback: any source
+                'compare' => '!=',
+            ]
+        ],
+    ];
+    $query = new WP_Query($args);
+    if ($query->have_posts()) {
+        $attachment_id = $query->posts[0]->ID;
+        $url = wp_get_attachment_url($attachment_id);
+        if ($url) return $url;
+    }
+}
+
+ /* 
+ * Returns the local URL or false on failure.
+ * Deduplication: Checks Media Library for existing image by tag/keyword or source URL before downloading.
+ * Tags new uploads for future matching.
+ *
+ * @param string $keyword
+ * @param string $story_title (optional)
+ * @return string|false
+ */
+function lexiquest_fetch_and_save_pixabay_image($keyword, $story_title = '') {
     error_log('LexiQuest: Attempting to fetch Pixabay image for keyword: ' . $keyword);
+    // 1. Deduplication: Search Media Library first
+    $existing_url = lexiquest_find_media_library_image($keyword);
+    if ($existing_url) {
+        error_log('LexiQuest: Found existing Media Library image for keyword: ' . $keyword);
+        return $existing_url;
+    }
+    $pixabay_key = get_option('lexiquest_pixabay_api_key');
+    if (!$pixabay_key) {
+        error_log('LexiQuest: Pixabay API key not set.');
+        return lexiquest_get_fallback_image_url();
+    }
+    // --- Keyword fallback debug ---
+    $safe_keyword = $keyword;
+    $whitelist = [
+        'animals','nature','reading','books','school','sports','adventure','science','art','music','friendship','kindness','history','space','math','technology','robot','garden','tree','forest','mountain','ocean','sea','river','flower','insect','bird','dog','cat','horse','dinosaur','transportation','train','car','plane','boat','exploration','discovery','imagination','fun','learning','play','children','kids','student','story','library','teacher','classroom','puzzle','game','drawing','painting','craft','lego','block','magic','superhero','princess','castle','knight','dragon','pirate','detective','mystery','holiday','festival','celebration','family','community','help','respect','courage','fish'
+    ];
+    if (!in_array(strtolower($keyword), $whitelist)) {
+        error_log('LexiQuest: Keyword "' . $keyword . '" not in whitelist. Falling back to "children books".');
+        $safe_keyword = 'children books';
+    }
+    // Relaxed filters: removed editors_choice and broadened search
+$api_url = 'https://pixabay.com/api/?key=' . urlencode($pixabay_key) . '&q=' . urlencode($safe_keyword) . '&safesearch=true&per_page=5&orientation=horizontal&image_type=photo'; // editors_choice removed, per_page increased
+// TODO: In the future, ask AI for a list of general/synonym fallback keywords if no result
+    $response = wp_remote_get($api_url);
+    if (is_wp_error($response)) {
+        error_log('LexiQuest: Pixabay API request failed: ' . $response->get_error_message());
+        return lexiquest_get_fallback_image_url();
+    }
+    $body = wp_remote_retrieve_body($response);
+    $json = json_decode($body, true);
+    if (empty($json['hits']) || !isset($json['hits'][0]['largeImageURL'])) {
+        error_log('LexiQuest: No Pixabay image found for keyword: ' . $safe_keyword);
+        // --- Fallback: always use static asset, never upload fallback image ---
+        $fallback_url = lexiquest_get_fallback_image_url();
+        error_log('LexiQuest: No suitable image found. Returning static fallback asset: ' . $fallback_url);
+        return $fallback_url;
+    }
+    $image_url = $json['hits'][0]['largeImageURL'];
+    // Prevent uploading fallback image: if the image_url is the fallback asset (local or known fallback), just return the fallback asset URL
+    $fallback_url = lexiquest_get_fallback_image_url();
+    if (strpos($image_url, 'children-books') !== false || $image_url === $fallback_url) {
+        error_log('LexiQuest: Pixabay returned fallback image. Returning static fallback asset: ' . $fallback_url);
+        return $fallback_url;
+    }
+    // 2. Deduplication: Check if this image URL has already been uploaded
+    $existing_by_url = get_posts([
+        'post_type'  => 'attachment',
+        'post_status'=> 'inherit',
+        'meta_key'   => '_lexiquest_pixabay_source_url',
+        'meta_value' => $image_url,
+        'numberposts'=> 1
+    ]);
+    if (!empty($existing_by_url)) {
+        $attachment_id = $existing_by_url[0]->ID;
+        $url = wp_get_attachment_url($attachment_id);
+        error_log('LexiQuest: Found duplicate image by source URL. Returning existing: ' . $url);
+        return $url;
+    }
+    require_once(ABSPATH . 'wp-admin/includes/file.php');
+    require_once(ABSPATH . 'wp-admin/includes/media.php');
+    require_once(ABSPATH . 'wp-admin/includes/image.php');
+    $tmp = download_url($image_url);
+    if (is_wp_error($tmp)) {
+        error_log('LexiQuest: download_url failed: ' . $tmp->get_error_message());
+        return lexiquest_get_fallback_image_url();
+    }
+    $file_array = [
+        'name' => $safe_keyword . '-' . time() . '.jpg',
+        'tmp_name' => $tmp
+    ];
+    $id = media_handle_sideload($file_array, 0);
+    if (is_wp_error($id)) {
+        error_log('LexiQuest: media_handle_sideload failed: ' . $id->get_error_message());
+        @unlink($tmp);
+        return lexiquest_get_fallback_image_url();
+    }
+    // 3. Tagging: Add keyword as tag and meta
+    wp_set_post_terms($id, [$safe_keyword], 'post_tag', true);
+    update_post_meta($id, '_lexiquest_pixabay_keyword', $safe_keyword);
+    update_post_meta($id, '_lexiquest_pixabay_source_url', $image_url);
+    $local_url = wp_get_attachment_url($id);
+    error_log('LexiQuest: Pixabay image sideloaded successfully. Local URL: ' . $local_url);
+    return $local_url;
+    error_log('LexiQuest: Attempting to fetch Pixabay image for keyword: ' . $keyword);
+    // 1. Deduplication: Search Media Library first
+    $existing_url = lexiquest_find_media_library_image($keyword);
+    if ($existing_url) {
+        error_log('LexiQuest: Found existing Media Library image for keyword: ' . $keyword);
+        return $existing_url;
+    }
     $pixabay_key = get_option('lexiquest_pixabay_api_key');
     if (!$pixabay_key) {
         error_log('LexiQuest: Pixabay API key not set.');
@@ -452,6 +624,20 @@ function lexiquest_fetch_and_save_pixabay_image($keyword) {
         return lexiquest_get_fallback_image_url();
     }
     $image_url = $json['hits'][0]['largeImageURL'];
+    // 2. Deduplication: Check if this image URL has already been uploaded
+    $existing_by_url = get_posts([
+        'post_type'  => 'attachment',
+        'post_status'=> 'inherit',
+        'meta_key'   => '_lexiquest_pixabay_source_url',
+        'meta_value' => $image_url,
+        'numberposts'=> 1
+    ]);
+    if (!empty($existing_by_url)) {
+        $attachment_id = $existing_by_url[0]->ID;
+        $url = wp_get_attachment_url($attachment_id);
+        error_log('LexiQuest: Found duplicate image by source URL. Returning existing: ' . $url);
+        return $url;
+    }
     require_once(ABSPATH . 'wp-admin/includes/file.php');
     require_once(ABSPATH . 'wp-admin/includes/media.php');
     require_once(ABSPATH . 'wp-admin/includes/image.php');
@@ -470,6 +656,10 @@ function lexiquest_fetch_and_save_pixabay_image($keyword) {
         @unlink($tmp);
         return lexiquest_get_fallback_image_url();
     }
+    // 3. Tagging: Add keyword as tag and meta
+    wp_set_post_terms($id, [$keyword], 'post_tag', true);
+    update_post_meta($id, '_lexiquest_pixabay_keyword', $keyword);
+    update_post_meta($id, '_lexiquest_pixabay_source_url', $image_url);
     $local_url = wp_get_attachment_url($id);
     error_log('LexiQuest: Pixabay image sideloaded successfully. Local URL: ' . $local_url);
     return $local_url;

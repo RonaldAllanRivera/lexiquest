@@ -45,7 +45,8 @@
                 <form id="lexiquest-student-form">
                     <label>Lexile Level: <input type="number" name="lexile" required min="0" /></label><br>
                     <label>Grade: <input type="number" name="grade" required min="1" max="12" /></label><br>
-                    <label>Interests (comma separated): <input type="text" name="interests" placeholder="adventure, animals, friendship" /></label><br>
+                    <label>Story Title (optional): <input type="text" name="story_title" placeholder="e.g. The Very Hungry Caterpillar" /></label><br>
+<label>Interests (comma separated): <input type="text" name="interests" placeholder="adventure, animals, friendship" /></label><br>
                     <button type="submit">Get My Story & Quiz</button>
                 </form>
                 <div id="lq-result" style="margin-top:2em;"></div>
@@ -62,6 +63,7 @@
         // Validate form data
         const lexile = parseInt(formData.get('lexile'), 10);
         const grade = parseInt(formData.get('grade'), 10);
+        const story_title = formData.get('story_title')?.trim();
         
         if (isNaN(lexile) || lexile <= 0) {
             showError('Please enter a valid Lexile level (must be a positive number)');
@@ -71,6 +73,18 @@
         if (isNaN(grade) || grade < 1 || grade > 12) {
             showError('Please enter a valid grade level (1-12)');
             return;
+        }
+        
+        // Prepare AJAX data
+        const data = {
+            action: 'lexiquest_generate_content',
+            nonce: lexiquest_ajax.nonce,
+            lexile,
+            grade,
+            interests: formData.get('interests'),
+        };
+        if (story_title) {
+            data.story_title = story_title;
         }
         
         // Show loading state
