@@ -40,7 +40,7 @@ class LexiQuest_Images {
         if (file_exists($fallback_abs)) {
             return $fallback_url;
         }
-        return 'https://via.placeholder.com/800x400?text=Image+Not+Available';
+        return plugin_dir_url(__FILE__) . '../assets/fallback.jpg';
     }
 
     /**

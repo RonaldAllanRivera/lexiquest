@@ -90,6 +90,29 @@
 }
 
 /* Story Meta Information */
+
+.story-paragraph-wrap {
+    overflow: auto;
+    margin-bottom: 2em;
+}
+
+.story-paragraph-img {
+    max-width: 220px;
+    max-height: 180px;
+    margin: 0 1.5em 1em 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.float-left {
+    float: left;
+    margin-right: 1.5em;
+}
+
+.float-right {
+    float: right;
+    margin-left: 1.5em;
+}
 .lexiquest-story-meta {
     margin: 10px 0 1.5em;
     font-size: 0.9em;

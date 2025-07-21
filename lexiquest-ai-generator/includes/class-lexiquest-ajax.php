@@ -65,12 +65,25 @@ class LexiQuest_AJAX {
             $story = $ai_result['story'] ?? null;
             $quiz = $ai_result['quiz'] ?? null;
             $openai_error = $ai_result['error'] ?? null;
-            // Fetch image (Pixabay, deduplication)
+            // Fetch main image (Pixabay, deduplication)
             $image_url = LexiQuest_Images::fetch_and_save_pixabay_image($keyword, $story_title);
+            // Fetch second image for before-last-paragraph (use 2nd prompt if available, else fallback to keyword)
+            $second_img_prompt = '';
+            if (isset($story['paragraph_images'][1])) {
+                $second_img_prompt = $story['paragraph_images'][1];
+            } elseif (!empty($story_title)) {
+                $second_img_prompt = $story_title;
+            } elseif (!empty($keyword)) {
+                $second_img_prompt = $keyword;
+            } else {
+                $second_img_prompt = 'children books';
+            }
+            $second_image_url = LexiQuest_Images::fetch_and_save_pixabay_image($second_img_prompt, $story_title);
             $response = [
                 'story' => $story,
                 'quiz' => $quiz,
                 'image_url' => $image_url,
+                'second_image_url' => $second_image_url,
                 'lexile' => $lexile_level,  // Add lexile to response
                 'grade' => $grade_level,    // Add grade to response
                 'errors' => LexiQuest_Utils::array_filter_non_empty([

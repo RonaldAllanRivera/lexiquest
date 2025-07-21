@@ -93,75 +93,64 @@
         statusElement.textContent = 'Creating your personalized story and quiz...';
         statusElement.className = 'status-loading';
         
-        try {
-            // Convert FormData to URL-encoded string
-            const formDataString = new URLSearchParams(formData).toString();
-            
-            // Make AJAX request
-            jQuery.ajax({
-                url: lexiquest_ajax.ajax_url,
-                type: 'POST',
-                data: formDataString + '&action=lexiquest_generate_content&nonce=' + encodeURIComponent(lexiquest_ajax.nonce),
-                success: function(response) {
-                    if (response && response.success) {
-                        // Clear any previous status
-                        statusElement.textContent = '';
-                        statusElement.className = '';
-                        // Render the story and quiz
-                        renderStoryAndQuiz(response.data);
-                    } else {
-                        // Show error message from server
-                        const errorMsg = (response && response.data && response.data.message) || 
-                                      'An unexpected error occurred. Please try again.';
-                        showError(errorMsg);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('AJAX Error:', status, error, xhr);
-                    let errorMsg = 'Failed to connect to the server. ';
-                    
-                    if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
-                        errorMsg = xhr.responseJSON.data.message;
-                    } else if (xhr.status === 0) {
-                        errorMsg += 'Please check your internet connection.';
-                    } else if (xhr.status === 403) {
-                        errorMsg = 'Session expired. Please refresh the page and try again.';
-                    } else if (xhr.status >= 500) {
-                        errorMsg = 'Server error. Please try again later.';
-                    }
-                    
-                    showError(errorMsg);
-                },
-                complete: function() {
-                    // Reset button state
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = originalText;
-                }
-            });
-        } catch (error) {
-            console.error('Unexpected error:', error);
-            showError('An unexpected error occurred. Please try again.');
+        // Vanilla JS AJAX (fetch)
+        fetch(lexiquest_ajax.ajax_url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
+            body: new URLSearchParams(data).toString()
+        })
+        .then(response => response.json())
+        .then(response => {
+            if (response && response.success) {
+                statusElement.textContent = '';
+                statusElement.className = '';
+                renderStoryAndQuiz(response.data);
+            } else {
+                const errorMsg = (response && response.data && response.data.message) || 'An unexpected error occurred. Please try again.';
+                showError(errorMsg);
+            }
+        })
+        .catch(error => {
+            console.error('AJAX Error:', error);
+            showError('Failed to connect to the server.');
+        })
+        .finally(() => {
             submitBtn.disabled = false;
             submitBtn.textContent = originalText;
-        }
+        });
     }
 
     function renderStoryAndQuiz(data) {
         const uiContainer = document.getElementById('lexiquest-student-ui');
+        if (!data || !data.story) {
+            uiContainer.innerHTML = '<div class="lexiquest-story"><p><em>Sorry, no story could be generated. Please try again.</em></p></div>';
+            return;
+        }
         
         // Build the story HTML
-        let html = `
-            <div class="lexiquest-story">
-                <h2>${(data.story && data.story.title) ? data.story.title : 'No Title Available'}</h2>
-                <div class="lexiquest-story-meta">
-                    <span class="lexile-level">Lexile Level: ${data.lexile || (data.story && data.story.lexile_level) || 'N/A'}</span>
-                    <span class="grade-level">Grade: ${data.grade || 'N/A'}</span>
-                </div>
-                ${data.image_url ? `<div class="story-image"><img src="${data.image_url}${data.image_url.includes('?') ? '&' : '?'}t=${Date.now()}" alt="${data.story.title}" onerror="this.onerror=null;this.src='https://via.placeholder.com/800x400?text=No+Image+Available';"></div>` : ''}
-                <div class="story-content">
-                    ${(data.story && typeof data.story.text === 'string' && data.story.text.trim() !== '' ? data.story.text.split('\n').map(paragraph => `<p>${paragraph}</p>`).join('') : '<p><em>Sorry, no story could be generated. Please try again.</em></p>')}
-                </div>
+        let html = `<div class="lexiquest-story">
+            <h2>${(data.story && data.story.title) ? data.story.title : 'No Title Available'}</h2>
+            <div class="lexiquest-story-meta">
+                <span class="lexile-level">Lexile Level: ${data.lexile || (data.story && data.story.lexile_level) || 'N/A'}</span>
+                <span class="grade-level">Grade: ${data.grade || 'N/A'}</span>
             </div>
+            ${data.image_url ? `<div class="story-image"><img src="${data.image_url}${data.image_url.includes('?') ? '&' : '?'}t=${Date.now()}" alt="${data.story.title}" onerror="this.onerror=null;this.src='https://via.placeholder.com/800x400?text=No+Image+Available';"></div>` : ''}
+            <div class="story-content">
+                ${Array.isArray(data.story?.text) && data.story.text.length ?
+                    data.story.text.map((paragraph, i, arr) => {
+                        // Insert second image before the last paragraph
+                        if (i === arr.length - 1 && data.second_image_url) {
+                            return `<div class="story-image"><img src="${data.second_image_url}${data.second_image_url.includes('?') ? '&' : '?'}t=${Date.now()}" alt="Story Image" style="display:block;margin:0 auto;max-width:90%;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1);margin-bottom:1.5em;" onerror="this.onerror=null;this.src='https://via.placeholder.com/800x400?text=No+Image+Available';"></div><p>${paragraph}</p>`;
+                        }
+                        return `<p>${paragraph}</p>`;
+                    }).join('')
+                : (data.story && typeof data.story.text === 'string' && data.story.text.trim() !== '' ? `<p>${data.story.text}</p>` : '<p><em>Sorry, no story could be generated. Please try again.</em></p>')}
+            </div>
+        </div>`;
+        
+        html += `
             ${(data.quiz && Array.isArray(data.quiz.questions) && data.quiz.questions.length > 0) ? `
             <div class="lexiquest-quiz">
                 <h3>Quiz Time!</h3>
