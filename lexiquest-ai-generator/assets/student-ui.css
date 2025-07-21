@@ -89,10 +89,19 @@
     line-height: 1.6;
 }
 
+/* Story Meta Information */
 .lexiquest-story-meta {
-    color: #7f8c8d;
-    margin-bottom: 1em;
+    margin: 10px 0 1.5em;
     font-size: 0.9em;
+    color: #7f8c8d;
+    text-align: center;
+}
+
+.lexiquest-story-meta .lexile-level,
+.lexiquest-story-meta .grade-level {
+    display: inline-block;
+    margin: 0 10px;
+    font-weight: 500;
 }
 
 .story-image {

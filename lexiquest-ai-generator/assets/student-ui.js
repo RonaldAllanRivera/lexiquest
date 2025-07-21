@@ -43,10 +43,10 @@
                 <h2>LexiQuest Student Portal</h2>
                 <div id="lq-status"></div>
                 <form id="lexiquest-student-form">
-                    <label>Lexile Level: <input type="number" name="lexile" required min="0" /></label><br>
-                    <label>Grade: <input type="number" name="grade" required min="1" max="12" /></label><br>
+                    <label>Lexile Level: <input type="number" name="lexile" required min="0" value="50" /></label><br>
+                    <label>Grade: <input type="number" name="grade" required min="1" max="12" value="3" /></label><br>
                     <label>Story Title (optional): <input type="text" name="story_title" placeholder="e.g. The Very Hungry Caterpillar" /></label><br>
-<label>Interests (comma separated): <input type="text" name="interests" placeholder="adventure, animals, friendship" /></label><br>
+                    <label>Interests (comma separated): <input type="text" name="interests" placeholder="adventure, animals, friendship" /></label><br>
                     <button type="submit">Get My Story & Quiz</button>
                 </form>
                 <div id="lq-result" style="margin-top:2em;"></div>
@@ -64,14 +64,14 @@
         const lexile = parseInt(formData.get('lexile'), 10);
         const grade = parseInt(formData.get('grade'), 10);
         const story_title = formData.get('story_title')?.trim();
-        
-        if (isNaN(lexile) || lexile <= 0) {
-            showError('Please enter a valid Lexile level (must be a positive number)');
+
+        // Lexile and Grade are always required
+        if (!formData.get('lexile') || isNaN(lexile) || lexile <= 0) {
+            showError('Lexile Level is required and must be a positive number.');
             return;
         }
-        
-        if (isNaN(grade) || grade < 1 || grade > 12) {
-            showError('Please enter a valid grade level (1-12)');
+        if (!formData.get('grade') || isNaN(grade) || grade < 1 || grade > 12) {
+            showError('Grade is required and must be between 1 and 12.');
             return;
         }
         
@@ -152,34 +152,39 @@
         // Build the story HTML
         let html = `
             <div class="lexiquest-story">
-                <h2>${data.story.title}</h2>
+                <h2>${(data.story && data.story.title) ? data.story.title : 'No Title Available'}</h2>
                 <div class="lexiquest-story-meta">
-                    <span class="lexile-level">Lexile Level: ${data.story.lexile_level}</span>
+                    <span class="lexile-level">Lexile Level: ${data.lexile || (data.story && data.story.lexile_level) || 'N/A'}</span>
+                    <span class="grade-level">Grade: ${data.grade || 'N/A'}</span>
                 </div>
                 ${data.image_url ? `<div class="story-image"><img src="${data.image_url}${data.image_url.includes('?') ? '&' : '?'}t=${Date.now()}" alt="${data.story.title}" onerror="this.onerror=null;this.src='https://via.placeholder.com/800x400?text=No+Image+Available';"></div>` : ''}
                 <div class="story-content">
-                    ${data.story.content.split('\n').map(paragraph => `<p>${paragraph}</p>`).join('')}
+                    ${(data.story && typeof data.story.text === 'string' && data.story.text.trim() !== '' ? data.story.text.split('\n').map(paragraph => `<p>${paragraph}</p>`).join('') : '<p><em>Sorry, no story could be generated. Please try again.</em></p>')}
                 </div>
             </div>
+            ${(data.quiz && Array.isArray(data.quiz.questions) && data.quiz.questions.length > 0) ? `
             <div class="lexiquest-quiz">
                 <h3>Quiz Time!</h3>
                 <form id="lexiquest-quiz-form">
                     ${data.quiz.questions.map((question, qIndex) => `
                         <div class="quiz-question">
-                            <p><strong>${qIndex + 1}. ${question.question}</strong></p>
+                            <p><strong>${qIndex + 1}. ${question.question || 'Question ' + (qIndex + 1)}</strong></p>
                             <div class="quiz-options">
-                                ${question.options.map((option, oIndex) => `
+                                ${(question.choices && Array.isArray(question.choices) ? question.choices : (question.options && Array.isArray(question.options) ? question.options : [])).map((option, oIndex) => `
                                     <label>
                                         <input type="radio" name="q${qIndex}" value="${oIndex}">
-                                        ${option}
+                                        ${option || 'Option ' + (oIndex + 1)}
                                     </label><br>
                                 `).join('')}
+                                ${(!(question.choices && question.choices.length) && !(question.options && question.options.length)) ? 
+                                    '<p><em>No options available for this question.</em></p>' : ''}
                             </div>
                         </div>
                     `).join('')}
                     <button type="submit" class="button">Submit Quiz</button>
                 </form>
-            </div>
+            </div>` : 
+            '<div class="lexiquest-quiz"><p><em>No quiz available at this time.</em></p></div>'}
             <div class="lexiquest-actions">
                 <button id="retake-assessment" class="button">Retake Lexile Assessment</button>
             </div>

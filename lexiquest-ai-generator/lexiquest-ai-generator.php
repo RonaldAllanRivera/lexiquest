@@ -6,81 +6,15 @@ Version: 0.1.0
 Author: Ronald Allan Rivera
 */
 
-// Silence is golden. Base plugin file.
+// Bootstrap LexiQuest plugin
+require_once __DIR__ . '/includes/class-lexiquest-core.php';
+require_once __DIR__ . '/includes/class-lexiquest-ai.php';
+require_once __DIR__ . '/includes/class-lexiquest-images.php';
+require_once __DIR__ . '/includes/class-lexiquest-ajax.php';
+require_once __DIR__ . '/includes/class-lexiquest-utils.php';
 
-// --- LexiQuest: Register tags for attachments ---
-add_action('init', function() {
-    register_taxonomy_for_object_type('post_tag', 'attachment');
-});
-
-// === LexiQuest Student UI Shortcode and Asset Loader ===
-function lexiquest_student_ui_shortcode($atts) {
-    // Enqueue assets
-    lexiquest_student_ui_enqueue_assets();
-    
-    // Output container div for JS UI
-    return '<div id="lexiquest-student-ui"></div>';
-}
-
-function lexiquest_student_ui_enqueue_assets() {
-    static $enqueued = false;
-    
-    if ($enqueued) {
-        return; // Prevent double enqueue
-    }
-    
-    $plugin_url = plugin_dir_url(__FILE__);
-    $version = '1.0.0';
-    
-    // Enqueue CSS
-    wp_enqueue_style(
-        'lexiquest-student-ui-css', 
-        $plugin_url . 'student-ui.css', 
-        [], 
-        $version
-    );
-    
-    // Enqueue JS with jQuery dependency
-    wp_enqueue_script(
-        'lexiquest-student-ui-js', 
-        $plugin_url . 'student-ui.js', 
-        ['jquery'], 
-        $version, 
-        true
-    );
-    
-    // Localize the script with the AJAX URL and nonce
-    $localized_data = [
-        'ajax_url' => admin_url('admin-ajax.php'),
-        'nonce'    => wp_create_nonce('lexiquest_ajax_nonce'),
-        'is_admin' => current_user_can('manage_options')
-    ];
-    
-    wp_localize_script(
-        'lexiquest-student-ui-js', 
-        'lexiquest_ajax', 
-        $localized_data
-    );
-    
-    // Debug output
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('LexiQuest: Script localized with: ' . print_r($localized_data, true));
-    }
-    
-    $enqueued = true;
-}
-// === End Student UI Shortcode ===
-
-// Register the shortcode
-add_action('init', function() {
-    add_shortcode('lexiquest_student_ui', 'lexiquest_student_ui_shortcode');
-});
-
-// Register AJAX handlers
-add_action('wp_ajax_lexiquest_generate_content', 'lexiquest_handle_generate_content');
-add_action('wp_ajax_nopriv_lexiquest_generate_content', 'lexiquest_handle_generate_content');
-add_action('wp_ajax_lexiquest_submit_quiz', 'lexiquest_handle_submit_quiz');
-add_action('wp_ajax_nopriv_lexiquest_submit_quiz', 'lexiquest_handle_submit_quiz');
+// Initialize plugin
+add_action('plugins_loaded', ['LexiQuestAIGenerator_Core', 'init']);
 
 // Handle content generation request
 function lexiquest_handle_generate_content() {
@@ -264,7 +198,7 @@ function lexiquest_ai_generate_content($request) {
 //     }
 //   ]
 // }
-$prompt = "You are an expert children's author and educator. Write an original, positive, age-appropriate story for a student in grade {$grade} with a Lexile level of {$lexile}. The story must be safe for children: no violence, fear, bullying, or inappropriate content. The story should be about {$theme}. Length: about 300 words. After the story, create 5 multiple-choice comprehension questions (4 options each), with the correct answer and a 1-sentence explanation. Output MUST be valid JSON with these keys: story_title, story_text, quiz_title, questions (array of question, choices, answer, explanation). If you cannot answer, output a JSON error object: {\"error\": \"reason\"}";
+$prompt = "You are an expert children's author and educator. Write an original, positive, age-appropriate story for a student in grade {$grade} with a Lexile level of {$lexile}. The story must be safe for children: no violence, fear, bullying, or inappropriate content. The story should be about {$theme}. Length: about 1000 words. After the story, create 5 multiple-choice comprehension questions (4 options each), with the correct answer and a 1-sentence explanation. Output MUST be valid JSON with these keys: story_title, story_text, quiz_title, questions (array of question, choices, answer, explanation). If you cannot answer, output a JSON error object: {\"error\": \"reason\"}";
 
     // --- 2. Call OpenAI API (GPT-4, safe prompt) ---
     $openai_key = get_option('lexiquest_openai_api_key');
