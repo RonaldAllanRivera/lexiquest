@@ -132,6 +132,12 @@ class LexiQuest_Images {
             'error'    => 0,
             'size'     => filesize($tmp),
         ];
+        // Ensure media_handle_sideload and dependencies are loaded
+        if (!function_exists('media_handle_sideload')) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+        }
         $id = media_handle_sideload($file, 0);
         if (is_wp_error($id)) {
             error_log('LexiQuest: Error uploading image to Media Library: ' . $id->get_error_message());

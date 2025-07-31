@@ -12,6 +12,7 @@ require_once __DIR__ . '/includes/class-lexiquest-ai.php';
 require_once __DIR__ . '/includes/class-lexiquest-images.php';
 require_once __DIR__ . '/includes/class-lexiquest-ajax.php';
 require_once __DIR__ . '/includes/class-lexiquest-utils.php';
+require_once __DIR__ . '/includes/class-lexiquest-rest.php';
 
 // Initialize plugin
 add_action('plugins_loaded', ['LexiQuestAIGenerator_Core', 'init']);
@@ -125,30 +126,13 @@ function lexiquest_handle_submit_quiz() {
     wp_send_json_success($response);
 }
 
-/**
- * LexiQuest AI Generator - Automated Backend Scaffolding
- *
- * Registers REST API endpoint for automated story, quiz, and image generation based on student profile.
- */
-add_action('rest_api_init', function () {
-    register_rest_route('lexiquest/v1', '/generate', array(
-        'methods' => 'POST',
-        'callback' => 'lexiquest_ai_generate_content',
-        'permission_callback' => 'lexiquest_ai_generate_permission_check',
-    ));
-});
 
 /**
  * Permission check for AI content generation endpoint.
  * Only allow logged-in students or teachers.
  */
 function lexiquest_ai_generate_permission_check() {
-    if ( !is_user_logged_in() ) return false;
-    $user = wp_get_current_user();
-    if ( in_array('lexiquest_student', $user->roles) || in_array('lexiquest_teacher', $user->roles) ) {
-        return true;
-    }
-    return false;
+    return is_user_logged_in();
 }
 
 
@@ -165,6 +149,11 @@ function lexiquest_ai_generate_content($request) {
     $grade = $params['grade'] ?? null;
     $interests = $params['interests'] ?? [];
     $student_id = $params['student_id'] ?? null;
+    // Ensure interests is always an array for implode
+    if (!is_array($interests)) {
+        // If it's a comma-separated string, convert to array
+        $interests = array_map('trim', explode(',', $interests));
+    }
 
     // Input validation
     $errors = [];

@@ -38,7 +38,7 @@ class LexiQuest_AI {
                 'max_tokens' => 1200,
                 'temperature' => 0.8,
             ]),
-            'timeout' => 30,
+            'timeout' => 60,
         ]);
         error_log('LexiQuest DEBUG: OpenAI API call complete');
         error_log('LexiQuest DEBUG: Raw OpenAI API response: ' . print_r($openai_response, true));
@@ -72,7 +72,7 @@ class LexiQuest_AI {
                     'max_tokens' => 400,
                     'temperature' => 0.8,
                 ]),
-                'timeout' => 20,
+                'timeout' => 60,
             ]);
             $retry_body_str = wp_remote_retrieve_body($retry_response);
             error_log('LexiQuest DEBUG: OpenAI retry response body: ' . $retry_body_str);

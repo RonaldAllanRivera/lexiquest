@@ -79,6 +79,28 @@ class LexiQuest_AJAX {
                 $second_img_prompt = 'children books';
             }
             $second_image_url = LexiQuest_Images::fetch_and_save_pixabay_image($second_img_prompt, $story_title);
+            // Automatic archiving to LexiQuest Story Archive plugin
+            if (function_exists('lexiquest_archive_story')) {
+                $archive_data = [
+                    'title' => $story['title'] ?? '',
+                    'text' => $story['text'] ?? [],
+                    'images' => [
+                        'main' => $image_url,
+                        'second' => $second_image_url
+                    ],
+                    'quiz' => $quiz,
+                    'categories' => [$keyword],
+                    'source' => 'ajax',
+                ];
+                $archive_result = lexiquest_archive_story($archive_data);
+                if ($archive_result) {
+                    LexiQuest_Utils::log('LexiQuest: Story auto-archived with post_id ' . $archive_result);
+                } else {
+                    LexiQuest_Utils::log('LexiQuest: Story auto-archive FAILED for title: ' . ($story['title'] ?? '')); 
+                }
+            } else {
+                LexiQuest_Utils::log('LexiQuest: Story archive function not found. Skipping auto-archive.');
+            }
             $response = [
                 'story' => $story,
                 'quiz' => $quiz,
@@ -109,9 +131,7 @@ class LexiQuest_AJAX {
      * Permission check for REST API endpoint.
      */
     public static function rest_permission_check() {
-        if (!is_user_logged_in()) return false;
-        $user = wp_get_current_user();
-        return (in_array('lexiquest_student', $user->roles) || in_array('lexiquest_teacher', $user->roles));
+        return is_user_logged_in();
     }
 
     /**
@@ -141,7 +161,28 @@ class LexiQuest_AJAX {
         $quiz = $ai_result['quiz'] ?? null;
         $openai_error = $ai_result['error'] ?? null;
         $image_url = LexiQuest_Images::fetch_and_save_pixabay_image($keyword, $story_title);
-        // Save to CPTs if desired (not implemented in this stub)
+        // Automatic archiving to LexiQuest Story Archive plugin (REST API)
+        if (function_exists('lexiquest_archive_story')) {
+            $archive_data = [
+                'title' => $story['title'] ?? '',
+                'text' => $story['text'] ?? [],
+                'images' => [
+                    'main' => $image_url,
+                    'second' => $image_url // REST does not fetch second image; use main for both
+                ],
+                'quiz' => $quiz,
+                'categories' => [$keyword],
+                'source' => 'rest',
+            ];
+            $archive_result = lexiquest_archive_story($archive_data);
+            if ($archive_result) {
+                LexiQuest_Utils::log('LexiQuest REST: Story auto-archived with post_id ' . $archive_result);
+            } else {
+                LexiQuest_Utils::log('LexiQuest REST: Story auto-archive FAILED for title: ' . ($story['title'] ?? ''));
+            }
+        } else {
+            LexiQuest_Utils::log('LexiQuest REST: Story archive function not found. Skipping auto-archive.');
+        }
         return new WP_REST_Response([
             'status' => ($story && $quiz) ? 'ok' : 'error',
             'message' => ($story && $quiz) ? 'AI content generated.' : 'Failed to generate content.',

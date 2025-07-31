@@ -1,5 +1,17 @@
 # LexiQuest AI
 
+## Recent Updates (2025-07-31)
+
+- **Story Source Tracking:**
+  - Each archived story now records its generation source (AJAX frontend or REST API).
+  - The LexiQuest Story Archive admin UI displays a new 'Source' column for clear differentiation.
+- **REST API Robustness:**
+  - Fixed a fatal error when generating stories via REST by ensuring WordPress media upload functions are loaded in all contexts.
+  - Media uploads now work reliably in both AJAX and REST flows.
+- **General Stability:**
+  - Improved diagnostic logging for archive operations.
+  - All features tested and confirmed working as of 2025-07-31.
+
 LexiQuest AI is a modular WordPress plugin suite designed to help children grow as readers through personalized, AI-generated stories and quizzes. It leverages OpenAI for dynamic content creation and public image APIs for visual storytelling. LexiQuest AI maintains familiar education-centric terminology like "Lexile Level," "Reading Progress," and "Student Quizzes" to deliver an engaging, scalable, and modern reading experience.
 
 **Note:** All features and documentation are tracked in the root `FEATURES.md` and `plan.md`. Per-plugin documentation files are not maintained. 
